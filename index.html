@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplicando Ando</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="shortcut icon" href="./img/X.png" type="image/x-icon">
+</head>
+<body>
+    <h1>Multiplicando Ando</h1>
+    <div id="app"></div>
+
+    <script>
+        // Variables para almacenar los datos del juego
+        let nombre = '';
+        let correctas = 0;
+        let incorrectas = 0;
+        let monedas = 0;
+        let multiplicacionesRealizadas = [];
+        const totalMultiplicacionesPosibles = 64;
+
+        // Función para mostrar el formulario de nombre
+        function mostrarFormularioNombre(mensajeError = '') {
+            const appDiv = document.getElementById('app');
+            appDiv.innerHTML = `
+                <h2>Hola, ¡qué bueno que quieras repasar las tablas de multiplicar!</h2>
+                <form id="nombreForm">
+                    <label for="my_name">¿Cómo te llamas?</label>
+                    <input type="text" id="my_name" required>
+                    <h4><u>IMPORTANTE:</u> Por cada 5 correctas ganas una moneda, pero por cada 3 incorrectas pierdes una moneda.</h4>
+                    <button type="submit">Iniciemos</button>
+                </form>
+                ${mensajeError ? `<p style="color: red;">${mensajeError}</p>` : ''}
+            `;
+
+            document.getElementById('nombreForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                let nombreInput = document.getElementById('my_name').value.trim();
+                if (nombreInput) {
+                    nombre = nombreInput.charAt(0).toUpperCase() + nombreInput.slice(1).toLowerCase();
+                    iniciarJuego();
+                } else {
+                    mostrarFormularioNombre("Por favor, ingresa un nombre válido.");
+                }
+            });
+        }
+
+        // Función para generar una multiplicación única
+        function generarMultiplicacionUnica() {
+            let numero1, numero2, multiplicacion;
+            do {
+                numero1 = Math.floor(Math.random() * (9 - 2 + 1)) + 2;
+                numero2 = Math.floor(Math.random() * (9 - 2 + 1)) + 2;
+                multiplicacion = `${numero1} x ${numero2}`;
+            } while (multiplicacionesRealizadas.includes(multiplicacion));
+
+            multiplicacionesRealizadas.push(multiplicacion);
+            return [numero1, numero2];
+        }
+
+        // Función para mostrar el formulario de multiplicación
+        function mostrarFormularioMultiplicacion(numero1, numero2) {
+            const appDiv = document.getElementById('app');
+            appDiv.innerHTML = `
+                <h3>${nombre}, ¿Cuánto es ${numero1} x ${numero2}?</h3>
+                <form id="multiplicacionForm">
+                    <input type="number" id="respuesta" required>
+                    <input type="hidden" id="numero1" value="${numero1}">
+                    <input type="hidden" id="numero2" value="${numero2}">
+                    <button type="submit">Responder</button>
+                </form>
+                <p><br>Respuestas correctas: ${correctas}, Respuestas Incorrectas: ${incorrectas}</p>
+            `;
+
+            document.getElementById('respuesta').focus();
+            document.getElementById('multiplicacionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                verificarRespuesta();
+            });
+
+            // Agregar evento al botón de suspender juego
+            document.getElementById('suspender').addEventListener('click', function() {
+                mostrarSuspension();
+            });
+        }
+
+        // Función para verificar la respuesta
+        function verificarRespuesta() {
+            const numero1 = parseInt(document.getElementById('numero1').value);
+            const numero2 = parseInt(document.getElementById('numero2').value);
+            const respuestaUsuario = parseInt(document.getElementById('respuesta').value);
+            const resultadoCorrecto = numero1 * numero2;
+
+            if (respuestaUsuario === resultadoCorrecto) {
+                correctas++;
+                if (correctas % 5 === 0) monedas++;
+            } else {
+                incorrectas++;
+                if (incorrectas % 3 === 0) monedas--;
+            }
+
+            // Verificar si se han realizado todas las multiplicaciones posibles
+            if (multiplicacionesRealizadas.length >= totalMultiplicacionesPosibles) {
+                mostrarResumenFinal();
+            } else {
+                mostrarResultado(numero1, numero2, respuestaUsuario, resultadoCorrecto);
+            }
+        }
+
+        // Función para mostrar el resultado con imágenes
+        function mostrarResultado(numero1, numero2, respuestaUsuario, resultadoCorrecto) {
+            const appDiv = document.getElementById('app');
+            let mensaje = '';
+            let imagenResultado = '';
+
+            if (respuestaUsuario === resultadoCorrecto) {
+                mensaje = `¡Correcto,<br><br> ${nombre}! ${numero1} x ${numero2} = ${resultadoCorrecto}`;
+                imagenResultado = '<img src="img/correcto.png" alt="Respuesta correcta"">';
+            } else {
+                mensaje = `Incorrecto,<br><br> ${nombre}. ${numero1} x ${numero2} = ${resultadoCorrecto}`;
+                imagenResultado = '<img src="img/incorrecto.png" alt="Respuesta incorrecta">';
+            }
+
+            appDiv.innerHTML = `
+                <h2>${mensaje}</h2>
+                ${imagenResultado}
+                <br>
+                <button id="continuar">Continúa</button>
+                <br><br>
+                <button id="suspender">Suspender Juego</button>
+            `;
+
+            document.getElementById('continuar').addEventListener('click', function() {
+                iniciarJuego();
+            });
+
+            // Agregar evento al botón de suspender juego
+            document.getElementById('suspender').addEventListener('click', function() {
+                mostrarSuspension();
+            });
+        }
+
+        // Función para mostrar la suspensión del juego
+        function mostrarSuspension() {
+            const appDiv = document.getElementById('app');
+            appDiv.innerHTML = `
+                <h2>Juego suspendido,<br> ${nombre}</h2>
+                <p>Respuestas correctas: ${correctas}</p>
+                <p>Respuestas incorrectas: ${incorrectas}</p>
+                <p>Monedas ganadas: ${monedas}</p>
+                <br>
+                <button id="reanudar">Continuar Juego</button>
+                <br><br>
+                <button id="reiniciar">Finalizar Juego</button>
+            `;
+
+            // Agregar evento para reanudar el juego
+            document.getElementById('reanudar').addEventListener('click', function() {
+                iniciarJuego();
+            });
+
+            // Agregar evento para reiniciar el juego
+            document.getElementById('reiniciar').addEventListener('click', function() {
+                reiniciarJuego();
+            });
+        }
+
+        // Función para mostrar el resumen final
+        function mostrarResumenFinal() {
+            const appDiv = document.getElementById('app');
+            appDiv.innerHTML = `
+                <h2>Resumen de tu partida,<br> ${nombre}:</h2>
+                <p>Respuestas correctas: ${correctas}</p>
+                <p>Respuestas incorrectas: ${incorrectas}</p>
+                <p>Monedas ganadas: ${monedas}</p>
+                <button id="reiniciar">Volver a jugar</button>
+            `;
+
+            document.getElementById('reiniciar').addEventListener('click', function() {
+                reiniciarJuego();
+            });
+        }
+
+        // Función para reiniciar el juego
+        function reiniciarJuego() {
+            correctas = 0;
+            incorrectas = 0;
+            monedas = 0;
+            multiplicacionesRealizadas = [];
+            mostrarFormularioNombre();
+        }
+
+        // Función para iniciar el juego
+        function iniciarJuego() {
+            const [numero1, numero2] = generarMultiplicacionUnica();
+            mostrarFormularioMultiplicacion(numero1, numero2);
+        }
+
+        // Mostrar el formulario de nombre al cargar la página
+        mostrarFormularioNombre();
+    </script>
+</body>
+</html>
